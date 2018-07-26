@@ -1,0 +1,81 @@
+#!/bin/sh
+
+#################################
+# Define Colors
+#################################
+
+# Regular Colors
+Clear="\033[0m"
+Black="\033[0;30m"
+Red="\033[0;31m"
+Green="\033[0;32m"
+Yellow="\033[0;33m"
+Blue="\033[0;34m"
+Purple="\033[0;35m"
+Cyan="\033[0;36m"
+White="\033[0;37m"
+Gray="\033[0;90m"
+
+# Background
+On_Black="\033[40m"
+On_Red="\033[41m"
+On_Green="\033[42m"
+On_Yellow="\033[43m"
+On_Blue="\033[44m"
+On_Purple="\033[45m"
+On_Cyan="\033[46m"
+On_White="\033[47m"
+
+line=$(seq -f "=" -s '' 80)
+
+# Pretty-print output
+function print_info() {
+    printf "%s${line}\n${Cyan}$1${Clear}\n${line}\n"
+}
+
+function message_failure() {
+    echo "${prefix}: ${White}${On_Red}  ERROR    ${Clear} $1"
+}
+
+function message_success() {
+    echo "${prefix}: ${Black}${On_Green}  SUCCESS  ${Clear} $1"
+}
+
+function message_warning() {
+    echo "${prefix}: ${Black}${On_Yellow}  WARNING  ${Clear} $1"
+}
+
+function message_info() {
+    echo "${prefix}: ${Black}${On_Cyan}  INFO     ${Clear} $1"
+}
+
+function message_log() {
+    echo "${prefix}: ${Black}${On_Blue}  INFO     ${Clear} ${Gray}$1${Clear}"
+}
+
+#####################################################
+
+CURRENT_DIR=$( cd "$( dirname "$0" )" && pwd )
+APP_DIR=$( cd "$( dirname "$CURRENT_DIR" )" && pwd )
+
+prefix=phpcpd
+report_format=log
+report=${APP_DIR}/storage/logs/${prefix}.${report_format}
+test_dir=$1 # Directory comes from input param
+
+cd ${APP_DIR}
+
+print_info "$(./vendor/bin/phpcpd --version)"
+
+./vendor/bin/phpcpd ${test_dir} 2>&1 >${report}
+
+if [ $? -ne 0 ]; then
+    if [ -f "${report}" ]; then
+        message_log "$(cat < ${report})"
+    fi
+    message_failure "PHP Copy/Paste Detector found some errors. Fix the errors before commit."
+else
+    message_success "No PHP Copy/Paste errors found!"
+fi
+
+exit 0
